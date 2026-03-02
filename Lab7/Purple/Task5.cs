@@ -1,7 +1,7 @@
-using System.Linq.Expressions;
 using System.Runtime;
 using System.Xml.Linq;
 
+using System;
 namespace Lab7.Purple
 {
     public class Task5
@@ -11,7 +11,6 @@ namespace Lab7.Purple
             private string _animal;
             private string _characterTrait;
             private string _concept;
-
 
             public string Animal => _animal;
             public string CharacterTrait => _characterTrait;
@@ -32,8 +31,10 @@ namespace Lab7.Purple
 
                 if (questionNumber == 1)
                     currentAnswer = _animal;
+
                 else if (questionNumber == 2)
                     currentAnswer = _characterTrait;
+
                 else if (questionNumber == 3)
                     currentAnswer = _concept;
 
@@ -42,7 +43,7 @@ namespace Lab7.Purple
 
                 foreach (var response in responses)
                 {
-                    string otherAnswer = null;
+                    string otherAnswer = "";
 
                     if (questionNumber == 1)
                         otherAnswer = response._animal;
@@ -66,12 +67,11 @@ namespace Lab7.Purple
             }
         }
 
-        // Структура Research для управления опросом
         public struct Research
         {
             private string _name;
-            private Response[] _responses;
 
+            private Response[] _responses;
             public string Name => _name;
             public Response[] Responses => _responses;
 
@@ -81,63 +81,34 @@ namespace Lab7.Purple
                 _responses = new Response[0];
             }
 
-            // Метод добавления нового ответа
-            public void Add(string[] answers)
+            public void Add(string[] responses)
             {
-                if (answers.Length != 3) return;
-
-                Response newResponse = new Response(answers[0], answers[1], answers[2]);
-
+                Response newResponse = new Response(responses[0], responses[1], responses[2]);
                 Array.Resize(ref _responses, _responses.Length + 1);
-
                 _responses[_responses.Length - 1] = newResponse;
             }
-
             public string[] GetTopResponses(int question)
             {
-                // Собираем все ответы на указанный вопрос
-                var answers = _responses
-                    // красивый короткий свич switch expression)
-                    .Select(r => question switch
-                    {
-                        1 => r.Animal,
-                        2 => r.CharacterTrait,
-                        3 => r.Concept,
-                        _ => null
-                    })
-                    .Where(a => !string.IsNullOrEmpty(a))
-                    .GroupBy(a => a)
-                    .OrderByDescending(g => g.Count())
-                    .Take(5)
-                    .Select(g => g.Key)
-                    .ToArray();
+                var allAnswers = _responses
+                    .Select(r =>
+                    question == 1 ? r.Animal :
+                    question == 2 ? r.CharacterTrait :
+                    question == 3 ? r.Concept : 
+                    null ) // ни одно не подошло
+                    .Where(a => !string.IsNullOrEmpty(a));
 
-                return answers;
+                return allAnswers
+                    .GroupBy(answer => answer)
+                    .OrderByDescending(group => group.Count())
+                    .Take(5)
+                    .Select(group => group.Key!) // ! null-forgiving operator фикс ошибки с нулом 
+                    .ToArray();
             }
 
             public void Print()
             {
-                Console.WriteLine($"Название опроса: {_name}");
-                Console.WriteLine($"Количество ответов: {_responses.Length}");
-                Console.WriteLine("Топ-5 ответов по вопросам:");
-
-                for (int i = 1; i <= 3; i++)
-                {
-                    string questionName = i switch
-                    {
-                        1 => "Животное",
-                        2 => "Черта характера",
-                        3 => "Понятие",
-                        _ => ""
-                    };
-
-                    Console.WriteLine($"\n{questionName}:");
-
-                    var topAnswers = GetTopResponses(i);
-
-                    foreach (var answer in topAnswers)
-                        Console.WriteLine($"  - {answer}");
-                }
+                Console.WriteLine(Name);
+                Console.WriteLine(String.Join(", ", Responses));
             }
         }
     }
